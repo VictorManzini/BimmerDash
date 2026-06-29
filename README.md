@@ -1,0 +1,1 @@
+Display automotivo inteligente para BMW M135i F20 — vitais em tempo real, gauges configuráveis, integração com modos de condução.
