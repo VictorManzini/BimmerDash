@@ -1,3 +1,4 @@
+import threading
 
 class PowerTrain: 
     #All engine sensors are gonna be inside this class
@@ -13,11 +14,16 @@ class PowerTrain:
     def read_boost(self):
         return self.turbo_pressure / 10
     
-engine = PowerTrain()
-
 class VehicleState:
     #Everything that is independent of the power train
     
-    speed = 0
-    drive_mode = "comfort" #BMW's driving mode that affects the power train and the suspensions
-    battery_voltage = 12.0
+    def __init__(self):
+        self.speed = 0
+        self.drive_mode = "comfort" #BMW's driving mode that affects the power train and the suspensions
+        self.battery_voltage = 12.0
+
+engine = PowerTrain()
+vehicle_state = VehicleState()
+
+engine_lock = threading.Lock()
+vehicle_state_lock = threading.Lock()
