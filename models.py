@@ -4,7 +4,7 @@ class PowerTrain:
     #All engine sensors are gonna be inside this class
     def __init__(self):
         self.turbo_pressure = 0.0
-        self.rpm = 750
+        self.rpm = 0
         self.oil_temp = 70
         self.water_temperature = 50.0
         self.fuel_consumption = 0 #Km/L 
