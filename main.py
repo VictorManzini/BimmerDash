@@ -1,12 +1,10 @@
+import threading 
 from time import sleep
-from models import engine
+from obd_reader import read_data
+from ui import show_data
 
-while True:
-    
-    for engine.turbo_pressure in range(0, 19):
-        print(f"Pressão de turbina: {engine.read_boost():.2f} psi")
-        sleep(0.5)
-    
-    for engine.turbo_pressure in range(19, -1, -1):
-        print(f"Pressão de turbina: {engine.read_boost():.2f} psi")
-        sleep(0.5)
+thread_engine = threading.Thread(target = read_data)
+thread_ui = threading.Thread(target = show_data)
+
+thread_engine.start()
+thread_ui.start()
