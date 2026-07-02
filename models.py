@@ -19,7 +19,7 @@ class VehicleState:
     
     def __init__(self):
         self.speed = 0 
-        self.drive_mode = "" #BMW's driving mode that affects the power train and the suspensions
+        self.drive_mode = "Comfort" #BMW's driving mode that affects the power train and the suspensions
         self.battery_voltage = 12.0
 
 engine = PowerTrain()
