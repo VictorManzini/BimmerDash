@@ -3,6 +3,23 @@ import threading
 import random
 from models import engine, vehicle_state, engine_lock, vehicle_state_lock
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
 def read_data():
     while True:
         for i in range(0, 19):
@@ -78,4 +95,4 @@ def read_data():
         with vehicle_state_lock: 
             vehicle_state.drive_mode = random.choice(["Comfort", "Sport", "Sport +", "ECO PRO"])
         #print(f"Modo de condução {vehicle_state.drive_mode}")
-        sleep(0.3)
+        sleep(0.3)'''
