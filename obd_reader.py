@@ -15,8 +15,8 @@ def read_data():
     directions = {"turbo": 1, "rpm": 1, "oil": 1, "water": 1, "transmission": 1, "speed": 1, "voltage": 1}
     while True: 
         with engine_lock: 
-            update_sensor(engine, "turbo_pressure", directions, "turbo", 0, 19, 1)
-            update_sensor(engine, "rpm", directions, "rpm", 1, 7, 1)
+            update_sensor(engine, "turbo_pressure", directions, "turbo", 0.0, 1.9, 0.1)
+            update_sensor(engine, "rpm", directions, "rpm", 1000, 7000, 100)
             update_sensor(engine, "oil_temp", directions, "oil", 40, 100, 1)
             update_sensor(engine, "water_temperature", directions, "water", 45, 95, 1)
             update_sensor(engine, "transmission_temperature", directions, "transmission", 80, 95, 1)
@@ -25,7 +25,7 @@ def read_data():
         with vehicle_state_lock: 
             update_sensor(vehicle_state, "speed", directions, "speed", 0, 90, 1)
             update_sensor(vehicle_state, "battery_voltage", directions, "voltage", 12.0, 13.5, 0.05)
-            vehicle_state.drive_mode = random.choice(["Sport +", "Sport", "Comfort", "ECO PRO"])
+            vehicle_state.drive_mode = random.choice(["Sport+", "Sport", "Comfort", "ECO PRO"])
         sleep(0.2)
 
 

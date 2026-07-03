@@ -16,5 +16,6 @@ def show_data():
             mode = vehicle_state.drive_mode
             voltage = vehicle_state.battery_voltage
 
-        print(f"Turbo pressure: {turbo:.1f}psi | RPM: {rpm:.0f} | Oil temperature: {oil:.1f}ºC | Engine temperature: {water:.1f}ºC | Gearbox temperature: {transmission}ºC | Fuel consumption: {fuel:.1f}Km/L | Speed: {speed:.0f}Km/h | Bat: {voltage:.1f}V | Mode: {mode}")
+        print(f"Turbo pressure: {turbo:.1f}psi | RPM: {rpm:.0f} | Oil temperature: {oil:.1f}ºC | Engine temperature: {water:.1f}ºC | Transmission temperature: {transmission}ºC | Fuel consumption: {fuel:.1f}Km/L | Speed: {speed:.0f}Km/h | Bat: {voltage:.1f}V | Mode: {mode}")
+        print("")
         sleep(0.5)
