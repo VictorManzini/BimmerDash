@@ -1,8 +1,17 @@
+import pygame
 from time import sleep
 from models import engine, vehicle_state, engine_lock, vehicle_state_lock
 
 def show_data():
-    while True: 
+    pygame.init()
+    screen = pygame.display.set_mode((800, 480))
+    font = pygame.font.Font(None, 50)
+    clock = pygame.time.Clock()
+    running = True
+    back_color = (0, 0, 120)
+    text_color = (255, 255, 255)
+
+    while running: 
         with engine_lock: 
             turbo = engine.turbo_pressure
             rpm = engine.rpm
@@ -15,7 +24,13 @@ def show_data():
             speed = vehicle_state.speed
             mode = vehicle_state.drive_mode
             voltage = vehicle_state.battery_voltage
-
-        print(f"Turbo pressure: {turbo:.1f}psi | RPM: {rpm:.0f} | Oil temperature: {oil:.1f}ºC | Engine temperature: {water:.1f}ºC | Transmission temperature: {transmission}ºC | Fuel consumption: {fuel:.1f}Km/L | Speed: {speed:.0f}Km/h | Bat: {voltage:.1f}V | Mode: {mode}")
-        print("")
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT: 
+                running = False 
+        clock.tick(30)
+        screen.fill(back_color)
+        text = font.render(f"RPM: {rpm:.0f}", True, text_color)
+        screen.blit(text, (100, 100))
+        pygame.display.flip()
         sleep(0.5)
