@@ -27,3 +27,5 @@ vehicle_state = VehicleState()
 
 engine_lock = threading.Lock()
 vehicle_state_lock = threading.Lock()
+stop_event = threading.Event()
+
