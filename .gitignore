@@ -4,5 +4,7 @@
 #venv
 venv/
 
-teste_ui.py
+ui_prototipo.py
+config.py
 
+claude.md
