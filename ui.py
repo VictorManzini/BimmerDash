@@ -5,11 +5,12 @@ from models import engine, vehicle_state, engine_lock, vehicle_state_lock, stop_
 def show_data():
     pygame.init()
     screen = pygame.display.set_mode((800, 480))
-    font = pygame.font.Font(None, 50)
+    font = pygame.font.Font(None, 45)
     clock = pygame.time.Clock()
     running = True
     back_color = (92, 93, 87)
     text_color = (255, 255, 255)
+    mode_color = (255, 255, 255)
 
     mode_keys = {
         pygame.K_1: "Comfort", 
@@ -20,9 +21,9 @@ def show_data():
 
     mode_colors = {
         "Comfort": (92, 93, 87),
-        "Sport": (120, 0, 0),
-        "Sport+": (150, 0, 0),
-        "ECO PRO": (20, 20, 200)
+        "Sport": (190, 0, 0),
+        "Sport+": (215, 0, 0),
+        "ECO PRO": (0, 95, 215)
     }
 
     try: 
@@ -75,6 +76,8 @@ def show_data():
                 text = font.render(f"{label}: {value:.1f}", True, text_color)
                 screen.blit(text, (100, y))
                 y += 50
+            mode_text = font.render(f"Mode: {mode}", True, mode_color)
+            screen.blit(mode_text, (100, y))
             
             clock.tick(30)
             pygame.display.flip()

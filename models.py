@@ -9,10 +9,6 @@ class PowerTrain:
         self.water_temperature = 50.0
         self.fuel_consumption = 0 #Km/L 
         self.transmission_temperature = 80.0
-
-    #Turbo Pressure
-    def read_boost(self):
-        return self.turbo_pressure / 10
     
 class VehicleState:
     #Everything that is independent of the power train
