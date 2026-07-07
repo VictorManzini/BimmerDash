@@ -1,0 +1,11 @@
+{
+    "mode": "Sport+", 
+    "slots": [
+        {"slot": 1, "sensor": "rpm"}, 
+        {"slot": 2, "sensor": "turbo_pressure"}, 
+        {"slot": 3, "sensor": "water_temperature"}, 
+        {"slot": 4, "sensor": "oil_temperature"}, 
+        {"slot": 5, "sensor": "speed"}, 
+        {"slot": 6, "semsor": "battery_voltage"}
+    ]
+}
