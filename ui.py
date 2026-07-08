@@ -1,6 +1,13 @@
 import pygame
 from time import sleep
+from gauges import gauge_config, value_to_angle, angle_to_coordinate
 from models import engine, vehicle_state, engine_lock, vehicle_state_lock, stop_event
+
+def draw_needle(screen, value, channel, cx, cy, radius):
+    config = gauge_config[channel]
+    angle = value_to_angle(value, config["min"], config["max"], config["arc_start"], config["arc_end"])
+    tip = angle_to_coordinate(angle, cx, cy, radius)
+    pygame.draw.line(screen, (255, 0,0), (cx, cy), tip, 4)
 
 def show_data():
     pygame.init()
@@ -65,6 +72,7 @@ def show_data():
                 back_color = (92, 93, 87)
 
             screen.fill(back_color)
+            draw_needle(screen, rpm, "rpm", 650, 240, 150)
         
             y = 50
             for label, value, min_limit, max_limit in chanels:
