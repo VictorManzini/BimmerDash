@@ -20,7 +20,7 @@ def draw_arc_background(screen, channel, cx, cy, radius):
     angulo_end_rad = math.radians(end_deg)
     pygame.draw.arc(screen, arc_color, rect, angulo_start_rad, angulo_end_rad, 4)
 
-def draw_ticks(screen, channel, cx, cy, radius, font):
+def draw_ticks(screen, channel, cx, cy, radius, font_small):
     arc_color = (255, 255, 255)
     config = gauge_config[channel]
     value = config["min"]
@@ -28,9 +28,9 @@ def draw_ticks(screen, channel, cx, cy, radius, font):
         angle = value_to_angle(value, config["min"], config["max"], config["arc_start"], config["arc_end"])
         p_out = angle_to_coordinate(angle, cx, cy, radius)
         p_in = angle_to_coordinate(angle, cx, cy, radius -15)
-        p_label = angle_to_coordinate(angle, cx, cy, radius - 35)
+        p_label = angle_to_coordinate(angle, cx, cy, radius - 25)
         pygame.draw.line(screen, arc_color, p_in, p_out, 3)
-        label = font.render(str(int(value)), True, (0,0,0))
+        label = font_small.render(str(int(value)), True, (0,0,0))
         screen.blit(label, label.get_rect(center=p_out))
         value += config["tick_step"]
 
@@ -39,6 +39,7 @@ def show_data():
     pygame.init()
     screen = pygame.display.set_mode((800, 480))
     font = pygame.font.Font(None, 45)
+    font_small = pygame.font.Font(None, 20)
     clock = pygame.time.Clock()
     running = True
     back_color = (92, 93, 87)
@@ -113,7 +114,7 @@ def show_data():
             #screen.blit(mode_text, (100, y))
 
             draw_arc_background(screen, "rpm", 650, 240, 150)
-            draw_ticks(screen, "rpm", 650, 240, 150, font)
+            draw_ticks(screen, "rpm", 650, 240, 150, font_small)
             draw_needle(screen, rpm, "rpm", 650, 240, 110)
             
             clock.tick(30)
