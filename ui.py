@@ -1,13 +1,30 @@
 import pygame
+import math
 from time import sleep
 from gauges import gauge_config, value_to_angle, angle_to_coordinate
 from models import engine, vehicle_state, engine_lock, vehicle_state_lock, stop_event
+
+arc_color = (255, 255, 255)
 
 def draw_needle(screen, value, channel, cx, cy, radius):
     config = gauge_config[channel]
     angle = value_to_angle(value, config["min"], config["max"], config["arc_start"], config["arc_end"])
     tip = angle_to_coordinate(angle, cx, cy, radius)
     pygame.draw.line(screen, (255, 0,0), (cx, cy), tip, 4)
+
+def draw_arc_background(screen, channel, cx, cy, radius): 
+    config = gauge_config[channel]
+    rect = pygame.Rect(cx - radius, cy - radius, radius * 2, radius * 2)
+    arc_start = math.radians(config["arc_start"])
+    arc_end = math.radians(config["arc_end"])
+    pygame.draw.arc(screen, arc_color, rect, arc_start, arc_end, 4)
+
+def draw_ticks(screen, channel, cx, cy, radius, font):
+    config = gauge_config[channel]
+    value = config["min"]
+    while value <= config["max"]: 
+        angle = value_to_angle(value, config["min"], )
+
 
 def show_data():
     pygame.init()
