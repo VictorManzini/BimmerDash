@@ -1,14 +1,31 @@
 import pygame
 import math
+import pygame.gfxdraw
 from time import sleep
 from gauges import gauge_config, value_to_angle, angle_to_coordinate
 from models import engine, vehicle_state, engine_lock, vehicle_state_lock, stop_event
 
 def draw_needle(screen, value, channel, cx, cy, radius):
     config = gauge_config[channel]
+    arc_color = (255, 0, 0)
     angle = value_to_angle(value, config["min"], config["max"], config["arc_start"], config["arc_end"])
+
+    angle_rad = math.radians(angle)
+    perp_rad = angle_rad + math.pi / 2
+    base_width = 6
+
     tip = angle_to_coordinate(angle, cx, cy, radius)
-    pygame.draw.line(screen, (255, 0,0), (cx, cy), tip, 4)
+
+    base_left = (cx + math.cos(perp_rad) * base_width, cy - math.sin(perp_rad) * base_width)
+    base_right = (cx - math.cos(perp_rad) * base_width, cy + math.sin(perp_rad) * base_width)
+
+    polygon = [tip, base_left, base_right]
+
+    pygame.gfxdraw.filled_polygon(screen, polygon, arc_color)
+    pygame.gfxdraw.aapolygon(screen, polygon, arc_color)
+
+    pygame.gfxdraw.filled_circle(screen, cx, cy, 6, arc_color)
+    pygame.gfxdraw.aacircle(screen, cx, cy, 6, arc_color)
 
 def draw_ticks(screen, channel, cx, cy, radius, font_small):
     arc_color = (255, 255, 255)
@@ -18,32 +35,39 @@ def draw_ticks(screen, channel, cx, cy, radius, font_small):
         angle = value_to_angle(value, config["min"], config["max"], config["arc_start"], config["arc_end"])
         p_out = angle_to_coordinate(angle, cx, cy, radius)
         p_in = angle_to_coordinate(angle, cx, cy, radius -15)
-        p_label = angle_to_coordinate(angle, cx, cy, radius - 25)
-        pygame.draw.line(screen, arc_color, p_in, p_out, 3)
+        p_label = angle_to_coordinate(angle, cx, cy, radius - 40)
+        pygame.draw.aaline(screen, arc_color, p_in, p_out, 3)
         label = font_small.render(str(int(value)), True, arc_color)
         screen.blit(label, label.get_rect(center=p_label))
         value += config["tick_step"]
 
-def draw_arc_background(screen, channel, cx, cy, radius):
+def draw_ring_arc(screen, channel, cx, cy, radius, thickness): 
     arc_color = (255, 255, 255)
     config = gauge_config[channel]
     steps = 60
-    step_value = (config["max"] - config["min"]) / steps
-    for i in range(steps): 
-        current_value = config["min"] +i * step_value 
-        next_value = config["min"] + (i + 1) * step_value
-        current_angle = value_to_angle(current_value, config["min"], config["max"], config["arc_start"], config["arc_end"])
-        next_angle = value_to_angle(next_value, config["min"], config["max"], config["arc_start"], config["arc_end"])
-        p1 = angle_to_coordinate(current_angle, cx, cy, radius)
-        p2 = angle_to_coordinate(next_angle, cx, cy, radius)
-        pygame.draw.line(screen, arc_color, p1, p2, 4)
-    
+    step_value = (config["max"] - config["min"]) / steps 
 
+    outer_points = []
+    inner_points = []
+
+    for i in range(steps + 1): 
+        value = (config["min"] + i * step_value)
+        angle = value_to_angle(value, config["min"], config["max"], config["arc_start"], config["arc_end"])
+        outer_point = angle_to_coordinate(angle, cx, cy, radius + thickness / 2) 
+        outer_points.append(outer_point)
+        inner_point = angle_to_coordinate(angle, cx, cy, radius - thickness / 2)
+        inner_points.append(inner_point)
+
+    inner_points.reverse()
+    polygon = outer_points + inner_points 
+    pygame.gfxdraw.filled_polygon(screen, polygon, arc_color)
+    pygame.gfxdraw.aapolygon(screen, polygon, arc_color)
+    
 def show_data():
     pygame.init()
     screen = pygame.display.set_mode((800, 480))
     font = pygame.font.Font(None, 45)
-    font_small = pygame.font.Font(None, 20)
+    font_small = pygame.font.Font(None, 16)
     clock = pygame.time.Clock()
     running = True
     back_color = (92, 93, 87)
@@ -106,7 +130,7 @@ def show_data():
             
             y = 50
 
-            draw_arc_background(screen, "rpm", 600, 200, 90)
+            draw_ring_arc(screen, "rpm", 600, 200, 90, 5)
             draw_ticks(screen, "rpm", 600, 200, 90, font_small)
             draw_needle(screen, rpm, "rpm", 600, 200, 65)
             
