@@ -10,16 +10,6 @@ def draw_needle(screen, value, channel, cx, cy, radius):
     tip = angle_to_coordinate(angle, cx, cy, radius)
     pygame.draw.line(screen, (255, 0,0), (cx, cy), tip, 4)
 
-def draw_arc_background(screen, channel, cx, cy, radius): 
-    arc_color = (255, 255, 255)
-    config = gauge_config[channel]
-    rect = pygame.Rect(cx - radius, cy - radius, radius * 2, radius * 2)
-    start_deg = config["arc_end"] if config["arc_end"] >= 0 else config["arc_end"] + 360
-    end_deg = config["arc_start"] if start_deg <= config["arc_start"] else config["arc_start"] + 360
-    angulo_start_rad = math.radians(start_deg)
-    angulo_end_rad = math.radians(end_deg)
-    pygame.draw.arc(screen, arc_color, rect, angulo_start_rad, angulo_end_rad, 4)
-
 def draw_ticks(screen, channel, cx, cy, radius, font_small):
     arc_color = (255, 255, 255)
     config = gauge_config[channel]
@@ -30,10 +20,24 @@ def draw_ticks(screen, channel, cx, cy, radius, font_small):
         p_in = angle_to_coordinate(angle, cx, cy, radius -15)
         p_label = angle_to_coordinate(angle, cx, cy, radius - 25)
         pygame.draw.line(screen, arc_color, p_in, p_out, 3)
-        label = font_small.render(str(int(value)), True, (0,0,0))
-        screen.blit(label, label.get_rect(center=p_out))
+        label = font_small.render(str(int(value)), True, arc_color)
+        screen.blit(label, label.get_rect(center=p_label))
         value += config["tick_step"]
 
+def draw_arc_background(screen, channel, cx, cy, radius):
+    arc_color = (255, 255, 255)
+    config = gauge_config[channel]
+    steps = 60
+    step_value = (config["max"] - config["min"]) / steps
+    for i in range(steps): 
+        current_value = config["min"] +i * step_value 
+        next_value = config["min"] + (i + 1) * step_value
+        current_angle = value_to_angle(current_value, config["min"], config["max"], config["arc_start"], config["arc_end"])
+        next_angle = value_to_angle(next_value, config["min"], config["max"], config["arc_start"], config["arc_end"])
+        p1 = angle_to_coordinate(current_angle, cx, cy, radius)
+        p2 = angle_to_coordinate(next_angle, cx, cy, radius)
+        pygame.draw.line(screen, arc_color, p1, p2, 4)
+    
 
 def show_data():
     pygame.init()
@@ -99,23 +103,12 @@ def show_data():
                 back_color = (92, 93, 87)
 
             screen.fill(back_color)
-        
+            
             y = 50
-            for label, value, min_limit, max_limit in chanels:
-                danger = (min_limit is not None and value <= min_limit) or (max_limit is not None and value >= max_limit)
-                if danger:
-                    text_color = (255, 0, 0)
-                else:
-                    text_color = (255, 255, 255)
-                #text = font.render(f"{label}: {value:.1f}", True, text_color)
-               # screen.blit(text, (100, y))
-                y += 50
-            #mode_text = font.render(f"Mode: {mode}", True, mode_color)
-            #screen.blit(mode_text, (100, y))
 
-            draw_arc_background(screen, "rpm", 650, 240, 150)
-            draw_ticks(screen, "rpm", 650, 240, 150, font_small)
-            draw_needle(screen, rpm, "rpm", 650, 240, 110)
+            draw_arc_background(screen, "rpm", 600, 200, 90)
+            draw_ticks(screen, "rpm", 600, 200, 90, font_small)
+            draw_needle(screen, rpm, "rpm", 600, 200, 65)
             
             clock.tick(30)
             pygame.display.flip()
