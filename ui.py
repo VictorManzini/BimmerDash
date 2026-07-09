@@ -1,7 +1,6 @@
 import pygame
 import math
 import pygame.gfxdraw
-from time import sleep
 from gauges import gauge_config, value_to_angle, angle_to_coordinate
 from models import engine, vehicle_state, engine_lock, vehicle_state_lock, stop_event
 
@@ -66,13 +65,11 @@ def draw_ring_arc(screen, channel, cx, cy, radius, thickness):
 def show_data():
     pygame.init()
     screen = pygame.display.set_mode((800, 480))
-    font = pygame.font.Font(None, 45)
     font_small = pygame.font.Font(None, 16)
     clock = pygame.time.Clock()
     running = True
     back_color = (92, 93, 87)
     text_color = (255, 255, 255)
-    mode_color = (255, 255, 255)
 
     mode_keys = {
         pygame.K_1: "Comfort", 
@@ -102,17 +99,6 @@ def show_data():
                 speed = vehicle_state.speed
                 mode = vehicle_state.drive_mode
                 voltage = vehicle_state.battery_voltage
-
-            chanels = [
-                ("Turbo", turbo, None, None), #(label, value, min limit, max limit)
-                ("RPM", rpm, None, 5000), 
-                ("Oil Temperature", oil, None, 115),
-                ("Water Temperature", water, None, 110),
-                ("Transmission Temperature", transmission, None, 96),
-                ("Fuel Consumption", fuel, None, None), 
-                ("Speed", speed, None, None),
-                ("Battery Voltage", voltage, 11.8, None)
-            ]
             
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: 
@@ -128,8 +114,6 @@ def show_data():
 
             screen.fill(back_color)
             
-            y = 50
-
             draw_ring_arc(screen, "rpm", 600, 200, 90, 5)
             draw_ticks(screen, "rpm", 600, 200, 90, font_small)
             draw_needle(screen, rpm, "rpm", 600, 200, 65)
