@@ -1,7 +1,7 @@
 import pygame
 import math
 import pygame.gfxdraw
-from gauges import gauge_config, value_to_angle, angle_to_coordinate, value_to_fraction
+from gauges import gauge_config, value_to_angle, angle_to_coordinate, value_to_fraction, value_to_color
 from models import engine, vehicle_state, engine_lock, vehicle_state_lock, stop_event
 
 def draw_needle(screen, value, channel, cx, cy, radius):
@@ -64,7 +64,7 @@ def draw_ring_arc(screen, channel, cx, cy, radius, thickness):
     
 def draw_bar(screen, value, channel, x, y, width, height): 
     config = gauge_config[channel]
-    bar_color = (255, 255, 255)
+    bar_color = value_to_color(value, config)
     track_color = (80,80,80)
 
     pygame.draw.rect(screen, track_color, pygame.Rect(x, y, width, height))
