@@ -1,7 +1,7 @@
 import pygame
 import math
 import pygame.gfxdraw
-from gauges import gauge_config, value_to_angle, angle_to_coordinate
+from gauges import gauge_config, value_to_angle, angle_to_coordinate, value_to_fraction
 from models import engine, vehicle_state, engine_lock, vehicle_state_lock, stop_event
 
 def draw_needle(screen, value, channel, cx, cy, radius):
@@ -62,6 +62,20 @@ def draw_ring_arc(screen, channel, cx, cy, radius, thickness):
     pygame.gfxdraw.filled_polygon(screen, polygon, arc_color)
     pygame.gfxdraw.aapolygon(screen, polygon, arc_color)
     
+def draw_bar(screen, value, channel, x, y, width, height): 
+    config = gauge_config[channel]
+    bar_color = (255, 255, 255)
+    track_color = (80,80,80)
+
+    pygame.draw.rect(screen, track_color, pygame.Rect(x, y, width, height))
+
+    fraction = value_to_fraction(value, config["min"], config["max"])
+    fill_height = int(height * fraction)
+
+    fill_y = y + (height - fill_height)
+
+    pygame.draw.rect(screen, bar_color, pygame.Rect(x, fill_y, width, fill_height))
+    
 def show_data():
     pygame.init()
     screen = pygame.display.set_mode((800, 480))
@@ -117,6 +131,7 @@ def show_data():
             draw_ring_arc(screen, "rpm", 600, 200, 90, 5)
             draw_ticks(screen, "rpm", 600, 200, 90, font_small)
             draw_needle(screen, rpm, "rpm", 600, 200, 65)
+            draw_bar(screen, rpm, "rpm", 300, 100, 40, 250)
             
             clock.tick(30)
             pygame.display.flip()

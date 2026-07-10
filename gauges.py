@@ -29,3 +29,7 @@ def value_to_color(value, config):
         return (255, 255, 255) #fixed white, no gradient
     # blue->green->red gradient goes here when handling temperature channels 
     return (255, 255, 255)
+
+def value_to_fraction(value, minimum, maximum): 
+    value = max(minimum, min(maximum, value))
+    return (value - minimum) / (maximum - minimum)
