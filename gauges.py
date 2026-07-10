@@ -7,7 +7,8 @@ gauge_config = {
         "tick_step": 1000, 
         "arc_start": 225,   #degrees, lower-left
         "arc_end": -45,     #degrees, lower-right
-        "color_rule": None  #RPM doesn't use temperature gradient
+        "color_rule": "gradient",
+        "critical_threshold": 6000 
     }
 }
 
@@ -33,3 +34,24 @@ def value_to_color(value, config):
 def value_to_fraction(value, minimum, maximum): 
     value = max(minimum, min(maximum, value))
     return (value - minimum) / (maximum - minimum)
+
+def value_to_color(value, config):
+    if config["color_rule"] is None: 
+        return (255, 255, 255)
+    
+    threshold = config["critical_threshold"]
+    minimum = config["min"]
+    midpoint = (minimum + threshold) / 2
+
+    if value < midpoint: 
+        ratio = (value - minimum) / (midpoint - minimum) 
+        r = int(0 + (0 - 0) * ratio)
+        g = int(0 + (255 + 0) * ratio) 
+        b = int(255 + (0 - 255) * ratio)
+        return (r, g, b)
+    else:
+        ratio = (value - midpoint) / (threshold - midpoint)
+        r = int(0 + (255 - 0) * ratio)
+        g = int(255 + (0 - 255) * ratio)
+        b = int(0 + (0 - 0) * ratio)
+        return (r, g, b)
