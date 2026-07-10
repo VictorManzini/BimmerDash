@@ -43,6 +43,11 @@ def value_to_color(value, config):
     minimum = config["min"]
     midpoint = (minimum + threshold) / 2
 
+    if value <= minimum: 
+        return(0, 0, 255)
+    if value >= threshold: 
+        return(255, 0, 0)
+
     if value < midpoint: 
         ratio = (value - minimum) / (midpoint - minimum) 
         r = int(0 + (0 - 0) * ratio)
