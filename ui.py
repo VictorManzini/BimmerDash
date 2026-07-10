@@ -23,8 +23,11 @@ def draw_needle(screen, value, channel, cx, cy, radius):
     pygame.gfxdraw.filled_polygon(screen, polygon, arc_color)
     pygame.gfxdraw.aapolygon(screen, polygon, arc_color)
 
-    pygame.gfxdraw.filled_circle(screen, cx, cy, 6, arc_color)
-    pygame.gfxdraw.aacircle(screen, cx, cy, 6, arc_color)
+    pygame.gfxdraw.filled_circle(screen, cx, cy, 9, (30, 30, 30))
+    pygame.gfxdraw.filled_circle(screen, cx, cy, 9, (30, 30, 30))
+
+    pygame.gfxdraw.filled_circle(screen, cx, cy, 4, arc_color)
+    pygame.gfxdraw.aacircle(screen, cx, cy, 4, arc_color)
 
 def draw_ticks(screen, channel, cx, cy, radius, font_small):
     arc_color = (255, 255, 255)
@@ -61,6 +64,29 @@ def draw_ring_arc(screen, channel, cx, cy, radius, thickness):
     polygon = outer_points + inner_points 
     pygame.gfxdraw.filled_polygon(screen, polygon, arc_color)
     pygame.gfxdraw.aapolygon(screen, polygon, arc_color)
+
+def draw_danger_zone(screen, channel, cx, cy, radius, thickness):
+    config = gauge_config[channel]
+    danger_color = (200, 40, 40)
+    threshold = config["critical_threshold"]
+    steps = 60
+    step_value = (config["max"] - threshold) / steps 
+
+    outer_points = []
+    inner_points = []
+
+    for i in range(steps + 1):
+        value = (threshold + i * step_value)
+        angle = value_to_angle(value, config["min"], config["max"], config["arc_start"], config["arc_end"])
+        outer_point = angle_to_coordinate(angle, cx, cy, radius + thickness / 2)
+        outer_points.append(outer_point)
+        inner_point = angle_to_coordinate(angle, cx, cy, radius - thickness / 2)
+        inner_points.append(inner_point)
+
+    inner_points.reverse()
+    polygon = outer_points + inner_points
+    pygame.gfxdraw.filled_polygon(screen, polygon, danger_color)
+    pygame.gfxdraw.aapolygon(screen, polygon, danger_color)
     
 def draw_bar(screen, value, channel, x, y, width, height): 
     config = gauge_config[channel]
@@ -129,6 +155,7 @@ def show_data():
             screen.fill(back_color)
             
             draw_ring_arc(screen, "rpm", 600, 200, 90, 5)
+            draw_danger_zone(screen, "rpm", 600, 200, 90, 8)
             draw_ticks(screen, "rpm", 600, 200, 90, font_small)
             draw_needle(screen, rpm, "rpm", 600, 200, 65)
             draw_bar(screen, rpm, "rpm", 300, 100, 40, 250)
