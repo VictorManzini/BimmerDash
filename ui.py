@@ -8,17 +8,16 @@ def draw_needle(screen, value, channel, cx, cy, radius):
     config = gauge_config[channel]
     arc_color = (255, 0, 0)
     angle = value_to_angle(value, config["min"], config["max"], config["arc_start"], config["arc_end"])
-
     angle_rad = math.radians(angle)
     perp_rad = angle_rad + math.pi / 2
     base_width = 6
-
     tip = angle_to_coordinate(angle, cx, cy, radius)
-
     base_left = (cx + math.cos(perp_rad) * base_width, cy - math.sin(perp_rad) * base_width)
     base_right = (cx - math.cos(perp_rad) * base_width, cy + math.sin(perp_rad) * base_width)
-
-    polygon = [tip, base_left, base_right]
+    tail_lenght = radius * 0.28
+    angle_back = angle + 180
+    tail_tip = angle_to_coordinate(angle_back, cx, cy, tail_lenght)
+    polygon = [tip, base_right, tail_tip, base_left]
 
     pygame.gfxdraw.filled_polygon(screen, polygon, arc_color)
     pygame.gfxdraw.aapolygon(screen, polygon, arc_color)
@@ -43,27 +42,26 @@ def draw_ticks(screen, channel, cx, cy, radius, font_small):
         screen.blit(label, label.get_rect(center=p_label))
         value += config["tick_step"]
 
-def draw_ring_arc(screen, channel, cx, cy, radius, thickness): 
-    arc_color = (255, 255, 255)
-    config = gauge_config[channel]
+def draw_ring_arc(screen, cx, cy, radius, thickness, start_deg, end_deg, arc_min, arc_max, color):
     steps = 60
-    step_value = (config["max"] - config["min"]) / steps 
-
+    step_value = (arc_max - arc_min) / steps 
     outer_points = []
     inner_points = []
-
-    for i in range(steps + 1): 
-        value = (config["min"] + i * step_value)
-        angle = value_to_angle(value, config["min"], config["max"], config["arc_start"], config["arc_end"])
-        outer_point = angle_to_coordinate(angle, cx, cy, radius + thickness / 2) 
+    for i in range(steps + 1):
+        value = arc_min + i * step_value
+        angle = value_to_angle(value, arc_min, arc_max, start_deg, end_deg)
+        outer_point = angle_to_coordinate(angle, cx, cy, radius + thickness / 2)
         outer_points.append(outer_point)
         inner_point = angle_to_coordinate(angle, cx, cy, radius - thickness / 2)
         inner_points.append(inner_point)
-
     inner_points.reverse()
-    polygon = outer_points + inner_points 
-    pygame.gfxdraw.filled_polygon(screen, polygon, arc_color)
-    pygame.gfxdraw.aapolygon(screen, polygon, arc_color)
+    polygon = outer_points + inner_points
+    pygame.gfxdraw.filled_polygon(screen, polygon, color)
+    pygame.gfxdraw.aapolygon(screen, polygon, color)
+
+def draw_value_bar(screen, value, channel, cx, cy, radius, thickness):
+    config = gauge_config[channel]
+    
 
 def draw_danger_zone(screen, channel, cx, cy, radius, thickness):
     config = gauge_config[channel]
@@ -71,10 +69,8 @@ def draw_danger_zone(screen, channel, cx, cy, radius, thickness):
     threshold = config["critical_threshold"]
     steps = 60
     step_value = (config["max"] - threshold) / steps 
-
     outer_points = []
     inner_points = []
-
     for i in range(steps + 1):
         value = (threshold + i * step_value)
         angle = value_to_angle(value, config["min"], config["max"], config["arc_start"], config["arc_end"])
@@ -82,7 +78,6 @@ def draw_danger_zone(screen, channel, cx, cy, radius, thickness):
         outer_points.append(outer_point)
         inner_point = angle_to_coordinate(angle, cx, cy, radius - thickness / 2)
         inner_points.append(inner_point)
-
     inner_points.reverse()
     polygon = outer_points + inner_points
     pygame.gfxdraw.filled_polygon(screen, polygon, danger_color)
@@ -92,14 +87,10 @@ def draw_bar(screen, value, channel, x, y, width, height):
     config = gauge_config[channel]
     bar_color = value_to_color(value, config)
     track_color = (80,80,80)
-
     pygame.draw.rect(screen, track_color, pygame.Rect(x, y, width, height))
-
     fraction = value_to_fraction(value, config["min"], config["max"])
     fill_height = int(height * fraction)
-
     fill_y = y + (height - fill_height)
-
     pygame.draw.rect(screen, bar_color, pygame.Rect(x, fill_y, width, fill_height))
     
 def show_data():
@@ -110,6 +101,7 @@ def show_data():
     running = True
     back_color = (92, 93, 87)
     text_color = (255, 255, 255)
+    rpm_config = gauge_config["rpm"]
 
     mode_keys = {
         pygame.K_1: "Comfort", 
@@ -154,7 +146,7 @@ def show_data():
 
             screen.fill(back_color)
             
-            draw_ring_arc(screen, "rpm", 600, 200, 90, 5)
+            draw_ring_arc(screen, 600, 200, 90, 5, rpm_config["arc_start"], rpm_config["arc_end"], rpm_config["min"], rpm_config["max"], (255, 255, 255))
             draw_danger_zone(screen, "rpm", 600, 200, 90, 8)
             draw_ticks(screen, "rpm", 600, 200, 90, font_small)
             draw_needle(screen, rpm, "rpm", 600, 200, 65)

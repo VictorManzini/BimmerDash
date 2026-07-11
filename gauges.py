@@ -12,13 +12,6 @@ gauge_config = {
     }
 }
 
-def value_to_angle(value, minimum, maximum, arc_start, arc_end):
-    value = max(minimum, min(maximum, value))   #clamp 
-    ratio = (value - minimum) / (maximum - minimum)
-    angle = arc_start + ratio * (arc_end - arc_start)
-    return angle
-
-
 def angle_to_coordinate(angle_degrees, cx, cy, radius):
     angle_rad = math.radians(angle_degrees)
     x = cx + radius * math.cos(angle_rad)
@@ -34,6 +27,11 @@ def value_to_color(value, config):
 def value_to_fraction(value, minimum, maximum): 
     value = max(minimum, min(maximum, value))
     return (value - minimum) / (maximum - minimum)
+
+def value_to_angle(value, minimum, maximum, arc_start, arc_end):
+    ratio = value_to_fraction(value, minimum, maximum)
+    angle = arc_start + ratio * (arc_end - arc_start)
+    return angle
 
 def value_to_color(value, config):
     if config["color_rule"] is None: 
