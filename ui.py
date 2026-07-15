@@ -59,10 +59,21 @@ def draw_ring_arc(screen, cx, cy, radius, thickness, start_deg, end_deg, arc_min
     pygame.gfxdraw.filled_polygon(screen, polygon, color)
     pygame.gfxdraw.aapolygon(screen, polygon, color)
 
-def draw_value_bar(screen, value, channel, cx, cy, radius, thickness):
+def draw_value_arc(screen, value, channel, cx, cy, radius, thickness):
     config = gauge_config[channel]
-    
 
+    draw_ring_arc(screen, cx, cy, radius, thickness, 
+                  config["arc_start"], config["arc_end"], 
+                  config["min"], config["max"], (80,80,80))
+    
+    fraction = value_to_fraction(value, config["min"], config["max"])
+    angle = config["arc_start"] + fraction * (config["arc_end"] - config["arc_start"])
+    color = value_to_color(value, config)
+
+    draw_ring_arc(screen, cx, cy, radius, thickness, 
+                  config["arc_start"], angle, 
+                  config["min"], config["max"], color)
+    
 def draw_danger_zone(screen, channel, cx, cy, radius, thickness):
     config = gauge_config[channel]
     danger_color = (200, 40, 40)
@@ -151,6 +162,7 @@ def show_data():
             draw_ticks(screen, "rpm", 600, 200, 90, font_small)
             draw_needle(screen, rpm, "rpm", 600, 200, 65)
             draw_bar(screen, rpm, "rpm", 300, 100, 40, 250)
+            draw_value_arc(screen, rpm, "rpm", 200, 350, 80, 8)
             
             clock.tick(30)
             pygame.display.flip()

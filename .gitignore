@@ -6,3 +6,5 @@ venv/
 
 teste_ui.py
 claude.md
+
+tests/
