@@ -4,6 +4,7 @@ gauge_config = {
     "rpm": {
         "min": 1000, 
         "max": 7000, 
+        "decimals": 0,
         "tick_step": 1000, 
         "arc_start": 225,   #degrees, lower-left
         "arc_end": -45,     #degrees, lower-right

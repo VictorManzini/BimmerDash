@@ -59,7 +59,7 @@ def draw_ring_arc(screen, cx, cy, radius, thickness, start_deg, end_deg, arc_min
     pygame.gfxdraw.filled_polygon(screen, polygon, color)
     pygame.gfxdraw.aapolygon(screen, polygon, color)
 
-def draw_value_arc(screen, value, channel, cx, cy, radius, thickness):
+def draw_value_arc(screen, value, channel, cx, cy, radius, thickness, font):
     config = gauge_config[channel]
 
     draw_ring_arc(screen, cx, cy, radius, thickness, 
@@ -73,6 +73,17 @@ def draw_value_arc(screen, value, channel, cx, cy, radius, thickness):
     draw_ring_arc(screen, cx, cy, radius, thickness, 
                   config["arc_start"], angle, 
                   config["min"], config["max"], color)
+    
+    if config["decimals"] == 0:
+        text = f"{int(round(value))}" # text é o nome da variavel, o que vai dentro dela é o que vai ser printado no display pelo pygame
+    else: 
+        text = f"{round(value, config['decimals'])}"
+    label = font.render(text, True, (255, 255, 255)) #label é quem vai renderizar o texto com cor
+    screen.blit(label, label.get_rect(center=(cx, cy))) #screen.blit é responsável por printar e por dar as coordenadas de onde o pygame deve printar o texto desejado  
+    text2 = channel
+    label2 = font.render(text2, True, (255, 255, 255))
+    screen.blit(label2, label2.get_rect(center=(cx, cy+20)))
+    
     
 def draw_danger_zone(screen, channel, cx, cy, radius, thickness):
     config = gauge_config[channel]
@@ -107,6 +118,7 @@ def draw_bar(screen, value, channel, x, y, width, height):
 def show_data():
     pygame.init()
     screen = pygame.display.set_mode((800, 480))
+    font = pygame.font.Font(None, 26)
     font_small = pygame.font.Font(None, 16)
     clock = pygame.time.Clock()
     running = True
@@ -162,7 +174,7 @@ def show_data():
             draw_ticks(screen, "rpm", 600, 200, 90, font_small)
             draw_needle(screen, rpm, "rpm", 600, 200, 65)
             draw_bar(screen, rpm, "rpm", 300, 100, 40, 250)
-            draw_value_arc(screen, rpm, "rpm", 200, 350, 80, 8)
+            draw_value_arc(screen, rpm, "rpm", 200, 350, 80, 8, font)
             
             clock.tick(30)
             pygame.display.flip()
