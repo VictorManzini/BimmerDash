@@ -114,6 +114,16 @@ def draw_bar(screen, value, channel, x, y, width, height):
     fill_height = int(height * fraction)
     fill_y = y + (height - fill_height)
     pygame.draw.rect(screen, bar_color, pygame.Rect(x, fill_y, width, fill_height))
+
+def get_slot_position(index, screen_width, screen_height, rows, cols):
+    cell_width = screen_width / cols
+    cell_height = screen_height / rows
+    row = index // cols 
+    col = index % cols
+
+    cx = col * cell_width + cell_width / 2
+    cy = row * cell_height + cell_height / 2
+    return cx, cy
     
 def show_data():
     pygame.init()
