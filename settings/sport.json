@@ -1,0 +1,11 @@
+{
+  "selected": ["rpm", "turbo", "speed", "oil", "water", "transmission"],
+  "gauge_types": {
+    "rpm": "Circular",
+    "turbo": "Arc",
+    "speed": "Digital",
+    "oil": "Bar",
+    "water": "Bar",
+    "transmission": "Bar"
+  }
+}

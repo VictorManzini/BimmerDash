@@ -1,0 +1,18 @@
+{
+  "selected": [
+    "rpm",
+    "turbo",
+    "water",
+    "oil",
+    "voltage",
+    "speed"
+  ],
+  "gauge_types": {
+    "rpm": "Circular",
+    "turbo": "Circular",
+    "water": "Bar",
+    "oil": "Bar",
+    "voltage": "Digital",
+    "speed": "Circular"
+  }
+}

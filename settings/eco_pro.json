@@ -1,0 +1,10 @@
+{
+  "selected": ["fuel", "speed", "rpm", "water", "voltage"],
+  "gauge_types": {
+    "fuel": "Digital",
+    "speed": "Digital",
+    "rpm": "Arc",
+    "water": "Arc",
+    "voltage": "Bar"
+  }
+}
