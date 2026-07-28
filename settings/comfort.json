@@ -13,6 +13,6 @@
     "water": "Bar",
     "oil": "Bar",
     "voltage": "Digital",
-    "speed": "Circular"
+    "speed": "Digital"
   }
 }

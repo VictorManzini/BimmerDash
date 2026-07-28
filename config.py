@@ -28,6 +28,7 @@ DEFAULT_SENSORS = ["rpm", "speed", "water", "oil", "turbo", "voltage"]  # up to 
 
 SETTINGS_DIR = Path(__file__).parent / "settings"
 SETTINGS_FILE = "settings.json"
+THRESHOLDS_FILE = "thresholds.json"
 MODE_FILES = {
     "Comfort": "comfort.json",
     "Sport": "sport.json",
@@ -67,6 +68,23 @@ def boot_mode():
     return m if m in MODE_FILES else "Comfort"
 
 
+# --- redline thresholds ------------------------------------------------
+# Personalized low/high danger values, overriding the SENSORS defaults above.
+
+def load_thresholds():
+    """Apply any saved low/high overrides onto SENSORS, in place."""
+    for k, v in _read(THRESHOLDS_FILE, {}).items():
+        if k in SENSORS:
+            SENSORS[k]["low"] = v.get("low", SENSORS[k]["low"])
+            SENSORS[k]["high"] = v.get("high", SENSORS[k]["high"])
+
+
+def save_thresholds():
+    SETTINGS_DIR.mkdir(exist_ok=True)
+    data = {k: {"low": m["low"], "high": m["high"]} for k, m in SENSORS.items()}
+    (SETTINGS_DIR / THRESHOLDS_FILE).write_text(json.dumps(data, indent=2))
+
+
 if __name__ == "__main__":  # ponytail: round-trip check against a throwaway dir
     import tempfile
 
@@ -85,4 +103,11 @@ if __name__ == "__main__":  # ponytail: round-trip check against a throwaway dir
         assert load_layout("Comfort")[0] == DEFAULT_SENSORS      # missing file -> defaults
         (Path(tmp) / "sport.json").write_text("{ not json")
         assert load_layout("Sport")[0] == DEFAULT_SENSORS        # corrupt file -> defaults
+
+        old_high = SENSORS["oil"]["high"]
+        SENSORS["oil"]["high"] = 111
+        save_thresholds()
+        SENSORS["oil"]["high"] = old_high                        # simulate a fresh process
+        load_thresholds()
+        assert SENSORS["oil"]["high"] == 111
     print("config self-check ok")

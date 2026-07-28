@@ -3,7 +3,8 @@ import pygame
 import pygame.gfxdraw
 from models import engine, vehicle_state, engine_lock, vehicle_state_lock, stop_event
 from config import (SENSORS, GAUGE_TYPES, MAX_SENSORS, DEFAULT_GAUGE,
-                    load_layout, save_layout, boot_mode)
+                    load_layout, save_layout, boot_mode,
+                    load_thresholds, save_thresholds)
 
 WHITE = (240, 240, 240)
 RED = (255, 0, 0)
@@ -39,6 +40,25 @@ def frac(value, meta):
 def in_danger(value, meta):
     return (meta["low"] is not None and value <= meta["low"]) or \
            (meta["high"] is not None and value >= meta["high"])
+
+
+def threshold_field(meta):
+    """Which bound is this sensor's redline? None if it has neither."""
+    if meta["high"] is not None:
+        return "high"
+    if meta["low"] is not None:
+        return "low"
+    return None
+
+
+def threshold_step(meta):
+    step = round((meta["gmax"] - meta["gmin"]) / 40, meta["dec"])
+    return step or 10 ** -meta["dec"]
+
+
+def adjust_threshold(meta, field, direction):
+    val = meta[field] + direction * threshold_step(meta)
+    meta[field] = round(max(meta["gmin"], min(meta["gmax"], val)), meta["dec"])
 
 
 def grad_color(f):
@@ -136,8 +156,8 @@ def draw_ring_arc(surf, cx, cy, r, width, start_deg, end_deg, color, cap=True):
 
 
 def draw_label(screen, rect, meta, fonts):
-    x, y, w, _ = rect
-    blit_text(screen, fonts["label"], meta["label"].upper(), LABEL, (x + w // 2, y + 15))
+    x, y, w, h = rect
+    blit_text(screen, fonts["label"], meta["label"].upper(), LABEL, (x + w // 2, y + h - 15))
 
 
 def draw_value(screen, cx, cy, value, meta, fonts, danger, font_key="value"):
@@ -230,15 +250,15 @@ def draw_arc(screen, rect, meta, value, fonts):
     col = DANGER if danger else level_color(meta, f)
     draw_ring_arc(screen, cx, cy, r, 9, 180, 0, TRACK, cap=False)
     draw_ring_arc(screen, cx, cy, r, 9, 180, 180 - f * 180, col, cap=True)
-    draw_label(screen, rect, meta, fonts)
     draw_value(screen, cx, cy - 4, value, meta, fonts, danger, "value")
+    draw_label(screen, rect, meta, fonts)
 
 
 def draw_bar(screen, rect, meta, value, fonts):
     x, y, w, h = rect
     bw = 34
     bx = x + w // 2 - bw // 2
-    top, bottom = y + 40, y + h - 34
+    top, bottom = y + 20, y + h - 54
     bh = bottom - top
     f = frac(value, meta)
     danger = in_danger(value, meta)
@@ -256,8 +276,8 @@ def draw_bar(screen, rect, meta, value, fonts):
         fill.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
         surf.blit(fill, (0, 0))
     screen.blit(surf, (bx, top))
+    draw_value(screen, x + w // 2, y + h - 40, value, meta, fonts, danger, "value")
     draw_label(screen, rect, meta, fonts)
-    draw_value(screen, x + w // 2, y + h - 16, value, meta, fonts, danger, "value")
 
 
 def draw_digital(screen, rect, meta, value, fonts):
@@ -265,17 +285,17 @@ def draw_digital(screen, rect, meta, value, fonts):
     f = frac(value, meta)
     danger = in_danger(value, meta)
     col = DANGER if danger else WHITE
-    draw_label(screen, rect, meta, fonts)
     draw_value(screen, x + w // 2, y + h // 2 - 4, value, meta, fonts, danger, "big")
     if meta["unit"]:
-        blit_text(screen, fonts["unit"], meta["unit"], MUTED, (x + w // 2, y + h - 40))
+        blit_text(screen, fonts["unit"], meta["unit"], MUTED, (x + w // 2, y + h - 58))
     # thin rounded progress underline
     uw = int(w * 0.5)
-    ux, uy, uh = x + (w - uw) // 2, y + h - 24, 6
+    ux, uy, uh = x + (w - uw) // 2, y + h - 42, 6
     fill_round_rect(screen, pygame.Rect(ux, uy, uw, uh), TRACK, uh // 2)
     fw = int(uw * f)
     if fw > 0:
         pygame.draw.rect(screen, col, (ux, uy, fw, uh), border_radius=uh // 2)
+    draw_label(screen, rect, meta, fonts)
 
 
 GAUGE_FUNCS = {
@@ -328,8 +348,10 @@ def slot_editor_layout():
                for i, k in enumerate(SENSORS)]
     gauges = [(t, pygame.Rect(12 + j * 196, 206, 184, 110)) for j, t in enumerate(GAUGE_TYPES)]
     prev, nxt = pygame.Rect(12, 340, 56, 50), pygame.Rect(140, 340, 56, 50)
+    back = pygame.Rect(216, 340, 160, 50)
     remove, done = pygame.Rect(400, 340, 180, 50), pygame.Rect(600, 340, 188, 50)
-    return sensors, gauges, prev, nxt, remove, done
+    thr_minus, thr_plus = pygame.Rect(12, 400, 60, 50), pygame.Rect(160, 400, 60, 50)
+    return sensors, gauges, prev, nxt, back, remove, done, thr_minus, thr_plus
 
 
 def move_slot(selected, i, delta):
@@ -366,7 +388,7 @@ def draw_arrow_button(screen, rect, left, active):
 
 def draw_slot_editor(screen, fonts, gauge_types, selected, i):
     key = selected[i]
-    sensors, gauges, prev, nxt, remove, done = slot_editor_layout()
+    sensors, gauges, prev, nxt, back, remove, done, thr_minus, thr_plus = slot_editor_layout()
     screen.fill((18, 18, 20))
     blit_text(screen, fonts["value"], f"Slot {i + 1}", WHITE, (0, 20), shadow=False, left=16)
     blit_text(screen, fonts["label"], "escolha o sensor e o tipo de gauge deste slot",
@@ -396,10 +418,27 @@ def draw_slot_editor(screen, fonts, gauge_types, selected, i):
     draw_arrow_button(screen, nxt, False, i < len(selected) - 1)
     blit_text(screen, fonts["value"], f"{i + 1}/{len(selected)}", WHITE,
               ((prev.right + nxt.x) // 2, prev.centery), shadow=False)
+    fill_round_rect(screen, back, (58, 58, 66), 9)
+    blit_text(screen, fonts["value"], "Voltar", WHITE, back.center, shadow=False)
     fill_round_rect(screen, remove, (116, 44, 40), 9)
     blit_text(screen, fonts["value"], "Remover", WHITE, remove.center, shadow=False)
     fill_round_rect(screen, done, (34, 116, 88), 9)
     blit_text(screen, fonts["value"], "OK", WHITE, done.center, shadow=False)
+
+    meta = SENSORS[key]
+    field = threshold_field(meta)
+    blit_text(screen, fonts["small"], "REDLINE", MUTED, (0, 384), shadow=False, left=12)
+    if field:
+        fill_round_rect(screen, thr_minus, (40, 40, 46), 9)
+        blit_text(screen, fonts["value"], "-", WHITE, thr_minus.center, shadow=False)
+        fill_round_rect(screen, thr_plus, (40, 40, 46), 9)
+        blit_text(screen, fonts["value"], "+", WHITE, thr_plus.center, shadow=False)
+        txt = f"{meta[field]:.{meta['dec']}f} {meta['unit']}".strip()
+        blit_text(screen, fonts["value"], txt, WHITE,
+                  ((thr_minus.right + thr_plus.x) // 2, thr_minus.centery), shadow=False)
+    else:
+        blit_text(screen, fonts["label"], "sem limite definido", MUTED,
+                  (0, thr_minus.centery), shadow=False, left=thr_minus.x)
 
 
 # --- save/discard confirmation --------------------------------------------
@@ -478,6 +517,7 @@ def show_data():
         "unit": load_font(15),
         "prevnum": load_font(19, bold=True),
     }
+    load_thresholds()
     layout_mode = boot_mode()
     with vehicle_state_lock:
         vehicle_state.drive_mode = layout_mode
@@ -527,17 +567,27 @@ def show_data():
 
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if editing is not None:
-                        sensors, gauges, prev, nxt, remove, done = slot_editor_layout()
+                        sensors, gauges, prev, nxt, back, remove, done, thr_minus, thr_plus = slot_editor_layout()
                         for k, cell in sensors:
                             if cell.collidepoint(event.pos):
                                 assign_slot(selected, editing, k)
                         for t, cell in gauges:
                             if cell.collidepoint(event.pos):
                                 gauge_types[selected[editing]] = t
+                        field = threshold_field(SENSORS[selected[editing]])
+                        if field and thr_minus.collidepoint(event.pos):
+                            adjust_threshold(SENSORS[selected[editing]], field, -1)
+                            save_thresholds()
+                        elif field and thr_plus.collidepoint(event.pos):
+                            adjust_threshold(SENSORS[selected[editing]], field, 1)
+                            save_thresholds()
                         if prev.collidepoint(event.pos):
                             editing = move_slot(selected, editing, -1)
                         elif nxt.collidepoint(event.pos):
                             editing = move_slot(selected, editing, 1)
+                        elif back.collidepoint(event.pos):
+                            confirm_open = (selected, gauge_types) != snapshot
+                            editing = editing if confirm_open else None
                         elif remove.collidepoint(event.pos):
                             selected.pop(editing)
                             confirm_open, editing = True, None
@@ -581,6 +631,13 @@ if __name__ == "__main__":  # ponytail: pure-logic self-check, no window
     assert frac(0, m) == 0.0 and frac(50, m) == 0.5 and frac(100, m) == 1.0
     assert frac(-5, m) == 0.0 and frac(150, m) == 1.0
     assert in_danger(95, m) and not in_danger(50, m)
+    assert threshold_field(m) == "high"
+    assert threshold_field({**m, "high": None}) is None
+    m2 = dict(m)
+    adjust_threshold(m2, "high", 1)
+    assert m2["high"] > 90
+    adjust_threshold(m2, "high", -100)
+    assert m2["gmin"] <= m2["high"] <= m2["gmax"]           # clamped, never runs off the dial
     assert grad_color(0.0) == (0, 200, 0) and grad_color(1.0) == (255, 0, 0)
     assert set(GAUGE_FUNCS) == set(GAUGE_TYPES)
 
@@ -596,6 +653,7 @@ if __name__ == "__main__":  # ponytail: pure-logic self-check, no window
     assert first_unused(s) not in s
 
     sensors, gauges, *buttons = slot_editor_layout()
+    assert len(buttons) == 7, "prev, nxt, back, remove, done, thr_minus, thr_plus"
     rects = [r for _, r in sensors] + [r for _, r in gauges] + buttons
     assert all(r.right <= 800 and r.bottom <= 480 for r in rects), "editor overflows screen"
     for n in range(0, MAX_SENSORS + 1):
