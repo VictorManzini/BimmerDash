@@ -21,6 +21,14 @@ MAX_SENSORS = 6
 DEFAULT_GAUGE = "Circular"
 DEFAULT_SENSORS = ["rpm", "speed", "water", "oil", "turbo", "voltage"]  # up to MAX_SENSORS
 
+# --- display units -----------------------------------------------------
+# Sensor values stay in their base unit (C, km/h) everywhere upstream; these
+# prefs only control how ui.py formats them on screen.
+
+TEMP_UNITS = ["C", "F"]
+SPEED_UNITS = ["km/h", "mph"]
+UNIT_PREFS = {"temp": "C", "speed": "km/h"}
+
 
 # --- saved layouts ---------------------------------------------------------
 # One file per drive mode holds that mode's dashboard; settings.json remembers
@@ -85,6 +93,23 @@ def save_thresholds():
     (SETTINGS_DIR / THRESHOLDS_FILE).write_text(json.dumps(data, indent=2))
 
 
+UNITS_FILE = "units.json"
+
+
+def load_units():
+    """Apply any saved temp/speed unit prefs onto UNIT_PREFS, in place."""
+    saved = _read(UNITS_FILE, {})
+    if saved.get("temp") in TEMP_UNITS:
+        UNIT_PREFS["temp"] = saved["temp"]
+    if saved.get("speed") in SPEED_UNITS:
+        UNIT_PREFS["speed"] = saved["speed"]
+
+
+def save_units():
+    SETTINGS_DIR.mkdir(exist_ok=True)
+    (SETTINGS_DIR / UNITS_FILE).write_text(json.dumps(UNIT_PREFS, indent=2))
+
+
 if __name__ == "__main__":  # ponytail: round-trip check against a throwaway dir
     import tempfile
 
@@ -110,4 +135,14 @@ if __name__ == "__main__":  # ponytail: round-trip check against a throwaway dir
         SENSORS["oil"]["high"] = old_high                        # simulate a fresh process
         load_thresholds()
         assert SENSORS["oil"]["high"] == 111
+
+        UNIT_PREFS["temp"], UNIT_PREFS["speed"] = "F", "mph"
+        save_units()
+        UNIT_PREFS["temp"], UNIT_PREFS["speed"] = "C", "km/h"     # simulate a fresh process
+        load_units()
+        assert UNIT_PREFS == {"temp": "F", "speed": "mph"}
+        (Path(tmp) / "units.json").write_text("{ not json")
+        UNIT_PREFS["temp"], UNIT_PREFS["speed"] = "C", "km/h"
+        load_units()                                              # corrupt file -> unchanged
+        assert UNIT_PREFS == {"temp": "C", "speed": "km/h"}
     print("config self-check ok")

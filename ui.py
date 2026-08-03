@@ -4,7 +4,10 @@ import pygame.gfxdraw
 from models import engine, vehicle_state, engine_lock, vehicle_state_lock, stop_event
 from config import (SENSORS, GAUGE_TYPES, MAX_SENSORS, DEFAULT_GAUGE,
                     load_layout, save_layout, boot_mode,
-                    load_thresholds, save_thresholds)
+                    load_thresholds, save_thresholds,
+                    load_units, save_units, UNIT_PREFS)
+
+UNIT_LABELS = {"C": "Cº", "F": "Fº", "km/h": "Km/h", "mph": "M/h"}
 
 WHITE = (240, 240, 240)
 RED = (255, 0, 0)
@@ -59,6 +62,42 @@ def threshold_step(meta):
 def adjust_threshold(meta, field, direction):
     val = meta[field] + direction * threshold_step(meta)
     meta[field] = round(max(meta["gmin"], min(meta["gmax"], val)), meta["dec"])
+
+
+def unit_kind(meta):
+    """'temp', 'speed', or None if this sensor has no unit toggle."""
+    if meta["unit"] == "C":
+        return "temp"
+    if meta["unit"] == "km/h":
+        return "speed"
+    return None
+
+
+def display_value(value, meta):
+    """Value converted from its base unit (C, km/h) to the user's chosen unit."""
+    kind = unit_kind(meta)
+    if kind == "temp" and UNIT_PREFS["temp"] == "F":
+        return value * 9 / 5 + 32
+    if kind == "speed" and UNIT_PREFS["speed"] == "mph":
+        return value * 0.621371
+    return value
+
+
+def display_unit(meta):
+    kind = unit_kind(meta)
+    if kind == "temp":
+        return UNIT_LABELS[UNIT_PREFS["temp"]]
+    if kind == "speed":
+        return UNIT_LABELS[UNIT_PREFS["speed"]]
+    return meta["unit"]
+
+
+def toggle_unit(meta):
+    kind = unit_kind(meta)
+    if kind == "temp":
+        UNIT_PREFS["temp"] = "F" if UNIT_PREFS["temp"] == "C" else "C"
+    elif kind == "speed":
+        UNIT_PREFS["speed"] = "mph" if UNIT_PREFS["speed"] == "km/h" else "km/h"
 
 
 def grad_color(f):
@@ -161,7 +200,7 @@ def draw_label(screen, rect, meta, fonts):
 
 
 def draw_value(screen, cx, cy, value, meta, fonts, danger, font_key="value"):
-    txt = f"{value:.{meta['dec']}f}"
+    txt = f"{display_value(value, meta):.{meta['dec']}f}"
     blit_text(screen, fonts[font_key], txt, DANGER if danger else WHITE, (cx, cy))
 
 
@@ -209,7 +248,7 @@ def draw_circular(screen, rect, meta, value, fonts):
         ca, sa = math.cos(a), math.sin(a)
         pygame.draw.line(screen, (235, 235, 240),
                          (cx + ca * r, cy - sa * r), (cx + ca * (r - 11), cy - sa * (r - 11)), 2)
-        blit_text(screen, fonts["small"], f"{t:.{dec}f}", (206, 206, 212),
+        blit_text(screen, fonts["small"], f"{display_value(t, meta):.{dec}f}", (206, 206, 212),
                   (cx + ca * (r - 22), cy - sa * (r - 22)))
     # minor ticks
     for i in range(len(ticks) - 1):
@@ -287,7 +326,7 @@ def draw_digital(screen, rect, meta, value, fonts):
     col = DANGER if danger else WHITE
     draw_value(screen, x + w // 2, y + h // 2 - 4, value, meta, fonts, danger, "big")
     if meta["unit"]:
-        blit_text(screen, fonts["unit"], meta["unit"], MUTED, (x + w // 2, y + h - 58))
+        blit_text(screen, fonts["unit"], display_unit(meta), MUTED, (x + w // 2, y + h - 58))
     # thin rounded progress underline
     uw = int(w * 0.5)
     ux, uy, uh = x + (w - uw) // 2, y + h - 42, 6
@@ -350,8 +389,9 @@ def slot_editor_layout():
     prev, nxt = pygame.Rect(12, 340, 56, 50), pygame.Rect(140, 340, 56, 50)
     back = pygame.Rect(216, 340, 160, 50)
     remove, done = pygame.Rect(400, 340, 180, 50), pygame.Rect(600, 340, 188, 50)
-    thr_minus, thr_plus = pygame.Rect(12, 400, 60, 50), pygame.Rect(160, 400, 60, 50)
-    return sensors, gauges, prev, nxt, back, remove, done, thr_minus, thr_plus
+    thr_minus, thr_plus = pygame.Rect(12, 412, 60, 50), pygame.Rect(160, 412, 60, 50)
+    unit_btn = pygame.Rect(260, 412, 140, 50)
+    return sensors, gauges, prev, nxt, back, remove, done, thr_minus, thr_plus, unit_btn
 
 
 def move_slot(selected, i, delta):
@@ -388,7 +428,7 @@ def draw_arrow_button(screen, rect, left, active):
 
 def draw_slot_editor(screen, fonts, gauge_types, selected, i):
     key = selected[i]
-    sensors, gauges, prev, nxt, back, remove, done, thr_minus, thr_plus = slot_editor_layout()
+    sensors, gauges, prev, nxt, back, remove, done, thr_minus, thr_plus, unit_btn = slot_editor_layout()
     screen.fill((18, 18, 20))
     blit_text(screen, fonts["value"], f"Slot {i + 1}", WHITE, (0, 20), shadow=False, left=16)
     blit_text(screen, fonts["label"], "escolha o sensor e o tipo de gauge deste slot",
@@ -427,18 +467,26 @@ def draw_slot_editor(screen, fonts, gauge_types, selected, i):
 
     meta = SENSORS[key]
     field = threshold_field(meta)
-    blit_text(screen, fonts["small"], "REDLINE", MUTED, (0, 384), shadow=False, left=12)
+    kind = unit_kind(meta)
+    blit_text(screen, fonts["small"], "REDLINE", MUTED,
+              ((thr_minus.left + thr_plus.right) // 2, thr_minus.top - 14), shadow=False)
     if field:
         fill_round_rect(screen, thr_minus, (40, 40, 46), 9)
         blit_text(screen, fonts["value"], "-", WHITE, thr_minus.center, shadow=False)
         fill_round_rect(screen, thr_plus, (40, 40, 46), 9)
         blit_text(screen, fonts["value"], "+", WHITE, thr_plus.center, shadow=False)
-        txt = f"{meta[field]:.{meta['dec']}f} {meta['unit']}".strip()
+        txt = f"{display_value(meta[field], meta):.{meta['dec']}f} {display_unit(meta)}".strip()
         blit_text(screen, fonts["value"], txt, WHITE,
                   ((thr_minus.right + thr_plus.x) // 2, thr_minus.centery), shadow=False)
     else:
         blit_text(screen, fonts["label"], "sem limite definido", MUTED,
                   (0, thr_minus.centery), shadow=False, left=thr_minus.x)
+
+    if kind:
+        blit_text(screen, fonts["small"], "UNIDADE", MUTED,
+                  (unit_btn.centerx, unit_btn.top - 14), shadow=False)
+        fill_round_rect(screen, unit_btn, (40, 40, 46), 9)
+        blit_text(screen, fonts["value"], display_unit(meta), WHITE, unit_btn.center, shadow=False)
 
 
 # --- save/discard confirmation --------------------------------------------
@@ -518,6 +566,7 @@ def show_data():
         "prevnum": load_font(19, bold=True),
     }
     load_thresholds()
+    load_units()
     layout_mode = boot_mode()
     with vehicle_state_lock:
         vehicle_state.drive_mode = layout_mode
@@ -567,7 +616,7 @@ def show_data():
 
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if editing is not None:
-                        sensors, gauges, prev, nxt, back, remove, done, thr_minus, thr_plus = slot_editor_layout()
+                        sensors, gauges, prev, nxt, back, remove, done, thr_minus, thr_plus, unit_btn = slot_editor_layout()
                         for k, cell in sensors:
                             if cell.collidepoint(event.pos):
                                 assign_slot(selected, editing, k)
@@ -581,6 +630,9 @@ def show_data():
                         elif field and thr_plus.collidepoint(event.pos):
                             adjust_threshold(SENSORS[selected[editing]], field, 1)
                             save_thresholds()
+                        if unit_kind(SENSORS[selected[editing]]) and unit_btn.collidepoint(event.pos):
+                            toggle_unit(SENSORS[selected[editing]])
+                            save_units()
                         if prev.collidepoint(event.pos):
                             editing = move_slot(selected, editing, -1)
                         elif nxt.collidepoint(event.pos):
@@ -641,6 +693,20 @@ if __name__ == "__main__":  # ponytail: pure-logic self-check, no window
     assert grad_color(0.0) == (0, 200, 0) and grad_color(1.0) == (255, 0, 0)
     assert set(GAUGE_FUNCS) == set(GAUGE_TYPES)
 
+    assert unit_kind({"unit": "C"}) == "temp"
+    assert unit_kind({"unit": "km/h"}) == "speed"
+    assert unit_kind({"unit": "V"}) is None
+    tm, sm = {"unit": "C", "dec": 0}, {"unit": "km/h", "dec": 0}
+    assert display_value(20, tm) == 20 and display_unit(tm) == "Cº"
+    toggle_unit(tm)
+    assert UNIT_PREFS["temp"] == "F" and display_value(0, tm) == 32 and display_unit(tm) == "Fº"
+    toggle_unit(tm)                                         # restore for a real run
+    assert UNIT_PREFS["temp"] == "C"
+    toggle_unit(sm)
+    assert UNIT_PREFS["speed"] == "mph" and abs(display_value(100, sm) - 62.1371) < 0.01
+    toggle_unit(sm)
+    assert UNIT_PREFS["speed"] == "km/h"
+
     s = ["rpm", "speed", "oil"]
     assert move_slot(s, 0, -1) == 0 and s == ["rpm", "speed", "oil"]   # already first
     assert move_slot(s, 2, 1) == 2 and s == ["rpm", "speed", "oil"]    # already last
@@ -653,7 +719,7 @@ if __name__ == "__main__":  # ponytail: pure-logic self-check, no window
     assert first_unused(s) not in s
 
     sensors, gauges, *buttons = slot_editor_layout()
-    assert len(buttons) == 7, "prev, nxt, back, remove, done, thr_minus, thr_plus"
+    assert len(buttons) == 8, "prev, nxt, back, remove, done, thr_minus, thr_plus, unit_btn"
     rects = [r for _, r in sensors] + [r for _, r in gauges] + buttons
     assert all(r.right <= 800 and r.bottom <= 480 for r in rects), "editor overflows screen"
     for n in range(0, MAX_SENSORS + 1):
